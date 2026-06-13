@@ -1,70 +1,78 @@
-import fs from 'node:fs';
-
-fs.readFile('./train.csv', 'utf8', (err, data) => {
-    if (err) {
-        console.error(err);
-    } else {
-        const arr = data.toString().split('\n');
-        let totalFare = 0;
-        let totalFare1 = 0;
-        let totalFare2 = 0;
-        let totalFare3 = 0;
-        let totalSurvived = 0;
-        let totalNotSurvived = 0;
-        let countSurvivedMen = 0;
-        let countSurvivedWomen = 0;
-        let countNotSurvivedMen = 0;
-        let countNotSurvivedWomen = 0;
-        let countSurvivedChildren = 0;
-        let countNotSurvivedChildren = 0;
-        for (let i = 1; i < arr.length; i++) {
-            const row = arr[i].split(',');
-            if (!row) {
-                continue;
-            }
-            totalFare += parseFloat(row[10]) ? parseFloat(row[10]) : 0;
-            if (row[2] === '1') {
-                totalFare1 += parseFloat(row[10]) ? parseFloat(row[10]) : 0;
-            } else if (row[2] === '2') {
-                totalFare2 += parseFloat(row[10]) ? parseFloat(row[10]) : 0;
-            } else if (row[2] === '3') {
-                totalFare3 += parseFloat(row[10]) ? parseFloat(row[10]) : 0;
-            }
-            if (row[1] === '0') {
-                totalNotSurvived++;
-                if (row[6] && Number(row[6]) < 18) {
-                    countNotSurvivedChildren++;
-                } else {
-                    if (row[5] === 'male') {
-                        countNotSurvivedMen++;
-                    } else {
-                        countNotSurvivedWomen++;
-                    }
-                }
-            } else {
-                totalSurvived++;
-                if (row[6] && Number(row[6]) < 18) {
-                    countSurvivedChildren++;
-                } else {
-                    if (row[5] === 'male') {
-                        countSurvivedMen++;
-                    } else {
-                        countSurvivedWomen++;
-                    }
-                }
-            }
-        }
-        console.log(`Total Fare: ${totalFare.toFixed(2)}`);
-        console.log(`Total Fare 1st Class: ${totalFare1.toFixed(2)}`);
-        console.log(`Total Fare 2nd Class: ${totalFare2.toFixed(2)}`);
-        console.log(`Total Fare 3rd Class: ${totalFare3.toFixed(2)}`);
-        console.log(`Total Survived: ${totalSurvived}`);
-        console.log(`Total Not Survived: ${totalNotSurvived}`);
-        console.log(`Count Survived Men: ${countSurvivedMen}`);
-        console.log(`Count Survived Women: ${countSurvivedWomen}`);
-        console.log(`Count Not Survived Men: ${countNotSurvivedMen}`);
-        console.log(`Count Not Survived Women: ${countNotSurvivedWomen}`);
-        console.log(`Count Survived Children: ${countSurvivedChildren}`);
-        console.log(`Count Not Survived Children: ${countNotSurvivedChildren}`);
+export class Titanic {
+    constructor(data, separator) {
+        this.data = data.map(s => s.split(separator))
     }
-})
+
+
+    get totalFares() {
+        return this.data
+            .map(c => +c[9])
+            .filter(f => !isNaN(f))
+            .reduce((a, b) => a + b);
+    }
+
+
+    get avgFaresByClasses() {
+        const res = this.data
+            .filter(c => !isNaN(+c[9]))
+            .map(c => ({pClass: c[2], fare: +c[9]}))
+            .reduce((acc, info) => {
+                const key = info.pClass;
+                if (!acc[key]) {
+                    acc[key] = [];
+                }
+                acc[key].push(info.fare);
+                return acc;
+            }, {})
+        for (const key in res) {
+            res[key] = +(res[key].reduce((a, b) => a + b) / res[key].length).toFixed(2);
+        }
+        return res;
+    }
+
+
+    get totalSurvived() {
+        return this.data
+            .reduce((acc, c) => {
+                const key = +c[1] ? 'Survived' : 'Non survived';
+                if (!acc[key]) {
+                    acc[key] = 0;
+                }
+                acc[key]++;
+                return acc;
+            }, {})
+    }
+
+
+    get totalSurvivedByGender() {
+        return this.data
+            .reduce((acc, c) => {
+                const key = this._survivedGender(c[4], c[1]);
+                if (!acc[key]) {
+                    acc[key] = 0;
+                }
+                acc[key]++;
+                return acc;
+            }, {})
+    }
+
+
+    get totalSurvivedChildren() {
+        return this.data
+            .filter(c => c[5] && c[5] < 18)
+            .reduce((acc, c) => {
+                const key = +c[1] ? 'Children survived' : 'Children non survived';
+                if (!acc[key]) {
+                    acc[key] = 0;
+                }
+                acc[key]++;
+                return acc;
+            }, {})
+    }
+
+
+    _survivedGender(gender, survived) {
+        survived = +survived ? 'survived' : 'non survived';
+        return gender + " " + survived;
+    }
+}

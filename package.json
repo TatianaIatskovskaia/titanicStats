@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "description": "Titanic Survival Stats",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "run-titanicStats": "node ./files_actions/titanic_stats.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "keywords": [],
   "author": "Tatiana",
