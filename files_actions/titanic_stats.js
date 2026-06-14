@@ -30,7 +30,7 @@ export class Titanic {
         return this._survivedChildren;
     }
 
-    processLine(line) {
+    lineInWork(line) {
         const c = line.split(this._separator);
 
         if (!isNaN(+c[9])) {

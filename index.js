@@ -16,7 +16,7 @@ rl.on('line', (line) => {
         isFirstLine = false;
         return;
     }
-    stats.processLine(line);
+    stats.lineInWork(line);
 });
 
 rl.on('close', () => {
