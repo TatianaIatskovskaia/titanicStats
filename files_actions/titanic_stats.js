@@ -1,75 +1,75 @@
 export class Titanic {
-    constructor(data, separator) {
-        this.data = data.map(s => s.split(separator))
+    constructor() {
+        this._separator = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+        this._totalFares = 0;
+        this._faresByClasses = {};
+        this._totalSurvived = {'Survived': 0, 'Non survived': 0};
+        this._survivedByGender = {};
+        this._survivedChildren = {'Children survived': 0, 'Children non survived': 0};
     }
-
 
     get totalFares() {
-        return this.data
-            .map(c => +c[9])
-            .filter(f => !isNaN(f))
-            .reduce((a, b) => a + b);
+        return this._totalFares;
     }
-
 
     get avgFaresByClasses() {
-        const res = this.data
-            .filter(c => !isNaN(+c[9]))
-            .map(c => ({pClass: c[2], fare: +c[9]}))
-            .reduce((acc, info) => {
-                const key = info.pClass;
-                if (!acc[key]) {
-                    acc[key] = [];
-                }
-                acc[key].push(info.fare);
-                return acc;
-            }, {})
-        for (const key in res) {
-            res[key] = +(res[key].reduce((a, b) => a + b) / res[key].length).toFixed(2);
-        }
-        return res;
+        return Object.entries(this._faresByClasses).map(([key, value]) => {
+            return {class: key, avg: (value.sum / value.count).toFixed(2)};
+        });
     }
-
 
     get totalSurvived() {
-        return this.data
-            .reduce((acc, c) => {
-                const key = +c[1] ? 'Survived' : 'Non survived';
-                if (!acc[key]) {
-                    acc[key] = 0;
-                }
-                acc[key]++;
-                return acc;
-            }, {})
+        return this._totalSurvived;
     }
-
 
     get totalSurvivedByGender() {
-        return this.data
-            .reduce((acc, c) => {
-                const key = this._survivedGender(c[4], c[1]);
-                if (!acc[key]) {
-                    acc[key] = 0;
-                }
-                acc[key]++;
-                return acc;
-            }, {})
+        return this._survivedByGender;
     }
-
 
     get totalSurvivedChildren() {
-        return this.data
-            .filter(c => c[5] && c[5] < 18)
-            .reduce((acc, c) => {
-                const key = +c[1] ? 'Children survived' : 'Children non survived';
-                if (!acc[key]) {
-                    acc[key] = 0;
-                }
-                acc[key]++;
-                return acc;
-            }, {})
+        return this._survivedChildren;
     }
 
+    processLine(line) {
+        const c = line.split(this._separator);
+
+        if (!isNaN(+c[9])) {
+            this._totalFares += +c[9];
+        }
+
+        if (!isNaN(+c[9])) {
+            const key = c[2];
+            if (!this._faresByClasses[key]) {
+                this._faresByClasses[key] = {sum: 0, count: 0};
+            }
+            this._faresByClasses[key].sum += +c[9];
+            this._faresByClasses[key].count++;
+        }
+
+        if (c[1]) {
+            const key = +c[1] ? 'Survived' : 'Non survived';
+            if (!this._totalSurvived[key]) {
+                this._totalSurvived[key] = 0;
+            }
+            this._totalSurvived[key]++;
+        }
+
+        if (c[4] && c[1]) {
+            const key = this._survivedGender(c[4], c[1]);
+            if (!this._survivedByGender[key]) {
+                this._survivedByGender[key] = 0;
+            }
+            this._survivedByGender[key]++;
+        }
+
+        if (c[5] && c[5] < 18) {
+            const key = +c[1] ? 'Children survived' : 'Children non survived';
+            if (!this._survivedChildren[key]) {
+                this._survivedChildren[key] = 0;
+            }
+            this._survivedChildren[key]++;
+        }
+    }
 
     _survivedGender(gender, survived) {
         survived = +survived ? 'survived' : 'non survived';
